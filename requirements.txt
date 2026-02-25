@@ -1,0 +1,6 @@
+requests
+pytz
+
+
+pytz==2024.1      # Handles world-wide timezone definitions
+requests==2.31.0  
