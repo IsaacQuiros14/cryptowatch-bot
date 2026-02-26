@@ -17,6 +17,7 @@ class CryptoAnalyzer:
 
     def get_top_gainers(self, market_data, top_n=3):
      
+     
         return sorted(
             market_data, 
             key=lambda x: x.get('change_24h', 0), 
