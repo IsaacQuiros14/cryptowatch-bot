@@ -21,8 +21,8 @@ class DBManager:
         conn.execute("PRAGMA journal_mode=WAL")
         return conn 
     
-    def _init_db(Self):
-        with Self._get_connection() as conn:
+    def _init_db(self):
+        with self._get_connection() as conn:
             
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS crypto_prices (
@@ -40,9 +40,9 @@ class DBManager:
             """)
             
             conn.commit()
-        print(f"DATABASE: Inicializada en {Self.db_path}")
+        print(f"DATABASE: Inicializada en {self.db_path}")
         
-    def insert_prices_batch(Self, prices_data: Dict[str, float], timestamp: Optional[datetime]= None ):
+    def insert_prices_batch(self, prices_data: Dict[str, float], timestamp: Optional[datetime]= None ):
         
         if timestamp is None:
             timestamp = datetime.now()
@@ -60,7 +60,7 @@ class DBManager:
         
         
         try: 
-            with Self._get_connection() as conn:
+            with self._get_connection() as conn:
                 conn.executemany(
                     "INSERT INTO crypto_prices ( timestamp, symbol, price ) VALUES (?, ? , ? )",
                     records
@@ -70,7 +70,7 @@ class DBManager:
             print(f"STORAGE: Insertados {len(records)} registros en base de datos.")  
         except sqlite3.Error as e: 
             raise DBManagerError(f"Fallo en insercion masivi: {e}")
-    def get_latest_prices(Self) -> List[Dict]: 
+    def get_latest_prices(self) -> List[Dict]: 
         
         query = """
             SELECT p1.symbol, p1.price, p1.timestamp
@@ -81,11 +81,11 @@ class DBManager:
                 GROUP BY symbol
             ) p2 ON p1.symbol = p2.symbol AND p1.timestamp = p2.max_timestamp
         """  
-        with Self._get_connection()as conn:
+        with self._get_connection()as conn:
             cursor = conn.execute(query)
             return [dict(row) for row in cursor.fetchall()] 
         
-    def get_statics(Self, symbol: str, days: int = 7 ) -> Dict:
+    def get_statistics(self, symbol: str, days: int = 7 ) -> Dict:
         """Calcula agregaciones estadisticas usando SQL nativo."""
         query = """
             SELECT 
@@ -97,7 +97,7 @@ class DBManager:
             WHERE symbol = ?
             AND timestamp >= datetime('now', '-' || ? || ' days')
         """
-        with Self._get_connection() as conn:
+        with self._get_connection() as conn:
             cursor = conn.execute(query,(symbol, days))
             row = cursor.fetchone()
             return dict(row) if row else {}

@@ -10,6 +10,7 @@ from src.collectors.crypto_collector import CryptoCollector
 from src.processors.crypto_analyzer import CryptoAnalyzer
 from src.storage.csv_handler import CSVHandler
 from src.storage.db_manager import DBManager
+from src.processors.data_validator import DataValidator, DataValidationError
 
 def main():
     print("CRYPTOWATCH BOT - SQL PRO EDITION")
@@ -23,33 +24,24 @@ def main():
     csv_handler = CSVHandler()
     db = DBManager()
     
+    raw_prices = {}
+    symbols = ['bitcoin', 'ethereum', 'solana', 'cardano', 'polkadot']
+    
+    
     try:
-        symbols = ['bitcoin', 'ethereum', 'solana', 'cardano', 'polkadot']
- 
-        print(f"EXTRACT: Consultando precios para: {', '.join(symbols)}")
-        prices = collector.get_multiple_prices(symbols)
-    
-        print("\nLOAD: Guardando datos...")
-     
-        csv_handler.append_price_batch(prices)
-
-        db.insert_prices_batch(prices)
-     
-        print("\n" + "="*50)
-        print("ESTADISTICAS SQL (REPORTES)")
-        print("="*50)
-
+        raw_prices = collector.get_multiple_prices(symbols)
+        
+        validated_prices = DataValidator.validate_prices(raw_prices)
+        
+        csv_handler.append_price_batch(validated_prices)
+        db.insert_prices_batch(validated_prices)
+        
         latest = db.get_latest_prices()
-        for record in latest:
-            print(f" {record['symbol'].upper():10} | DB Price: ${record['price']:>12,.2f}")
-            
-        print("-" * 50)
-        print("PIPELINE EJECUTADO EXITOSAMENTE")
-
-    except Exception as e:
-        print(f"ERROR CRITICO: {e}")
+        
+    except DataValidationError as e:
+        print(f"\n ADVERTENCIA DE CALIDAD: {e}")
         return 1
-    
+
     return 0
 
 if __name__ == "__main__":
